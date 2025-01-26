@@ -2,7 +2,7 @@ import axios from 'axios';
 // import Constants from 'expo-constants';
 
 const API_BASE_URL = __DEV__ 
-  ? 'http://192.168.165.208:4000'
+  ? 'http://localhost:4000'
   : 'http://10.0.2.2:4000';  // אם אתה משתמש באמולטור אנדרואיד
   // או
   // ? 'http://localhost:4000'
@@ -32,19 +32,10 @@ export const registerUser = async (email, name, password) => {
 
 export const loginUser = async (email, password) => {
   try {
-    console.log('Login request details:', {
-      email,
-      url: `${API_BASE_URL}/auth/login`,
-    });
-    
-    const response = await apiClient.post("/auth/login", { email, password });
-    console.log('Login response:', response.data);
-
-    if (response.data.access_token) {
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
-      return response.data;  // מחזירים את התשובה המקורית
-    }
-    throw new Error('לא התקבל טוקן');
+    console.log('Attempting to login user:', email);
+    const response = await apiClient.post("/users/login", { email, password });
+    console.log('Login successful');
+    return response.data;
   } catch (error) {
     console.error('Login error details:', {
       status: error.response?.status,

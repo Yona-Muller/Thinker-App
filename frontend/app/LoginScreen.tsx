@@ -17,8 +17,8 @@ const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: "177341998424-mkisfnbh7iucmmbq0du7e1tejr0gioaa.apps.googleusercontent.com", // תחליף את זה עם ה-Client ID שלך
-    webClientId: "177341998424-mkisfnbh7iucmmbq0du7e1tejr0gioaa.apps.googleusercontent.com", // תחליף את זה עם ה-Client ID שלך
+    androidClientId: "177341998424-mkisfnbh7iucmmbq0du7e1tejr0gioaa.apps.googleusercontent.com",
+    webClientId: "177341998424-mkisfnbh7iucmmbq0du7e1tejr0gioaa.apps.googleusercontent.com",
   });
 
   const showToast = (type: 'success' | 'error', text: string) => {
