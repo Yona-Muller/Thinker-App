@@ -1,14 +1,15 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, ActivityIndicator } from 'react-native';
 import Toast, { BaseToast, ErrorToast, ToastProps } from 'react-native-toast-message';
-
+import { NotecardProvider } from '@/context/NotecardContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { setupAuthToken } from './apiService';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -43,10 +44,27 @@ export default function RootLayout() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const setupAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        console.log('Auth token loaded:', token ? 'exists' : 'missing');
+      } catch (error) {
+        console.error('Error loading auth token:', error);
+      }
+    };
+    
+    setupAuth();
+  }, []);
+
+  useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
-        setIsAuthenticated(!!token);
+        const isValid = await setupAuthToken();
+        setIsAuthenticated(isValid);
+        if (isValid) {
+          router.replace('/(tabs)');  // אם המשתמש מחובר, ננווט למסך הבית
+        }
       } catch (error) {
         console.error('Error checking auth status:', error);
         setIsAuthenticated(false);
@@ -73,21 +91,23 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack initialRouteName="index">
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="LoginScreen" options={{ headerShown: false }} />
-          {isAuthenticated && (
-            <>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
-            </>
-          )}
-        </Stack>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      </ThemeProvider>
-      <Toast config={toastConfig} />
-    </View> 
+    <NotecardProvider>
+      <View style={{ flex: 1 }}>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack initialRouteName="index">
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="LoginScreen" options={{ headerShown: false }} />
+            {isAuthenticated && (
+              <>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
+              </>
+            )}
+          </Stack>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        </ThemeProvider>
+        <Toast config={toastConfig} />
+      </View> 
+    </NotecardProvider>
   );
 }

@@ -60,21 +60,24 @@ const LoginScreen = () => {
   const handleSubmit = async () => {
     try {
       setIsLoading(true);
-
+  
       if (isLogin) {
-        // התחברות
         if (!email || !password) {
           showToast('error', 'אנא מלא את כל השדות');
           return;
         }
-
+  
         const response = await loginUser(email, password);
-        console.log('Login successful:', response);
+        console.log('Login response received:', response);
         
-        if (response.token) {
-          await AsyncStorage.setItem('authToken', response.token);
+        if (response.access_token) {
+          await AsyncStorage.setItem('authToken', response.access_token);
+          console.log('Token saved, navigating to home...');
           showToast('success', 'התחברת בהצלחה!');
           router.replace('/(tabs)');
+        } else {
+          console.error('No access token in response');
+          showToast('error', 'שגיאה בהתחברות');
         }
       } else {
         // הרשמה

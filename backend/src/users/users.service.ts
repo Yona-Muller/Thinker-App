@@ -12,23 +12,19 @@ export class UsersService {
   ) {}
 
   async register(email: string, name: string, password: string): Promise<User> {
-    // בדוק אם המייל כבר קיים
     const existingUser = await this.userRepository.findOne({ where: { email } });
     if (existingUser) {
       throw new Error('Email is already in use.');
     }
 
-    // הצפן את הסיסמה
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // צור את המשתמש החדש
     const newUser = this.userRepository.create({
       email,
       name,
       password: hashedPassword,
     });
 
-    // שמור את המשתמש בבסיס הנתונים
     return await this.userRepository.save(newUser);
   }
 
@@ -38,5 +34,9 @@ export class UsersService {
 
   async findOne(id: number): Promise<User> {
     return this.userRepository.findOne({ where: { id } });
+  }
+
+  async findByEmail(email: string): Promise<User> {
+    return this.userRepository.findOne({ where: { email } });
   }
 }

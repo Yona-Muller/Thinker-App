@@ -1,160 +1,131 @@
 import React, { useState } from 'react';
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
-import * as Speech from 'expo-speech';
+import { View, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedView } from '@/components/ThemedView';
-import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
+import { useNotecards } from '../context/NotecardContext';
 
-export const SearchBar = () => {
-  const [searchText, setSearchText] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
+const API_URL = 'http://192.168.165.208:4000'; // וודא שזה אותו IP כמו בקונטקסט
 
-  // Handle voice recognition
-  const toggleVoiceRecording = async () => {
-    if (isRecording) {
-      setIsRecording(false);
-      await Speech.stop();
-    } else {
-      try {
-        setIsRecording(true);
-        
-        const { status } = await Speech.requestPermissionsAsync();
-        if (status !== 'granted') {
-          console.log('Permission not granted');
-          return;
-        }
+export const SearchBar = ({ onNoteCardCreated }) => {
+  const [url, setUrl] = useState('');
+  const { refreshNotecards } = useNotecards();
+  const [isLoading, setIsLoading] = useState(false);
 
-        Speech.speak('Listening...', {
-          onDone: () => {
-            setIsRecording(false);
-          },
-          onError: () => {
-            setIsRecording(false);
-          }
-        });
-      } catch (error) {
-        console.error(error);
-        setIsRecording(false);
-      }
+  const handleSubmit = async () => {
+    if (!url) {
+      Alert.alert('שגיאה', 'נא להזין כתובת URL');
+      return;
     }
-  };
 
-  // Handle camera access
-  const handleCamera = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status === 'granted') {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        console.log(result.assets[0].uri);
-      }
-    }
-  };
-
-  // Handle file upload
-  const handleFileUpload = async () => {
+    setIsLoading(true);
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        copyToCacheDirectory: false,
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        Alert.alert('שגיאה', 'נא להתחבר מחדש');
+        return;
+      }
+
+      console.log('Creating new notecard for URL:', url);
+
+      const noteCardData = {
+        sourceUrl: url,
+        sourceType: 'youtube',
+        title: 'כותרת זמנית',
+        thumbnailUrl: 'https://example.com/default-thumbnail.jpg',
+        channelName: 'ערוץ לא ידוע',
+        channelAvatar: 'https://example.com/default-avatar.jpg',
+        keyTakeaways: [],
+        thoughts: []
+      };
+
+      const response = await fetch(`${API_URL}/notecards`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(noteCardData),
       });
 
-      if (result.type === 'success') {
-        console.log(result.uri);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to create notecard:', response.status, errorText);
+        throw new Error('Failed to create notecard');
+      }
+
+      const newNoteCard = await response.json();
+      console.log('Created new notecard:', newNoteCard);
+      
+      setUrl('');
+      await refreshNotecards(); // רענון הרשימה אחרי הוספת כרטיס חדש
+      Toast.show({
+        type: 'success',
+        text1: 'הכרטיס נוצר בהצלחה!',
+        position: 'bottom',
+      });
+      
+      if (onNoteCardCreated) {
+        onNoteCardCreated(newNoteCard);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error creating notecard:', error);
+      Toast.show({
+        type: 'error',
+        text1: error.message || 'שגיאה ביצירת הכרטיס',
+        position: 'bottom',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <LinearGradient
-        colors={['transparent', 'rgb(230, 248, 255)']}
-        style={styles.topGradient}
+    <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        placeholder="הדבק קישור ליוטיוב כאן..."
+        value={url}
+        onChangeText={setUrl}
+        onSubmitEditing={handleSubmit}
       />
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.input}
-          value={searchText}
-          onChangeText={setSearchText}
-          placeholder="Add your Thought/Paste Link"
-          placeholderTextColor="#666"
+      <TouchableOpacity 
+        onPress={handleSubmit} 
+        style={styles.button}
+        disabled={isLoading}
+      >
+        <Ionicons 
+          name={isLoading ? "hourglass-outline" : "add-circle-outline"} 
+          size={24} 
+          color="#007AFF" 
         />
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleCamera}>
-            <Ionicons name="camera" size={20} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={toggleVoiceRecording}>
-            <Ionicons
-              name={isRecording ? 'mic' : 'mic-outline'}
-              size={22}
-              color={isRecording ? '#007AFF' : '#666'}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handleFileUpload}>
-            <Ionicons name="attach" size={22} color="#666" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ThemedView>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    bottom: 8,
-    left: 15,
-    right: 15,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'transparent',
-  },
-  topGradient: {
-    position: 'absolute',
-    bottom: '117%', // Position it just above the container
-    left: -16,
-    right: -16,
-    height: 60,
-    // zIndex: 200,
-  },
-  searchContainer: {
     flexDirection: 'row',
-    borderRadius: 50,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#808080',
-    backgroundColor: 'rgb(230, 248, 255)',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 25,
+    padding: 10,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
-    padding: 0,
-    height: Platform.OS === 'ios' ? 24 : undefined,
+    marginRight: 10,
+    textAlign: 'right',
   },
-  actionButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionButton: {
-    padding: 4,
-    marginLeft: 0,
-  },
+  button: {
+    padding: 5,
+  }
 });

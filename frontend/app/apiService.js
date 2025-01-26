@@ -1,9 +1,12 @@
 import axios from 'axios';
 // import Constants from 'expo-constants';
 
-const API_BASE_URL =  __DEV__ 
-? 'http://192.168.100.208:4000'
-: 'https://your-production-url.com'; 
+const API_BASE_URL = __DEV__ 
+  ? 'http://192.168.165.208:4000'
+  : 'http://10.0.2.2:4000';  // אם אתה משתמש באמולטור אנדרואיד
+  // או
+  // ? 'http://localhost:4000'
+  // : 'https://your-production-url.com';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -29,11 +32,28 @@ export const registerUser = async (email, name, password) => {
 
 export const loginUser = async (email, password) => {
   try {
-    console.log('Attempting to login user:', email);
-    const response = await apiClient.post("/users/login", { email, password });
-    console.log('Login successful');
-    return response.data;
+    console.log('Login request details:', {
+      email,
+      url: `${API_BASE_URL}/auth/login`,
+    });
+    
+    const response = await apiClient.post("/auth/login", { email, password });
+    console.log('Login response:', response.data);
+
+    if (response.data.access_token) {
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+      return response.data;  // מחזירים את התשובה המקורית
+    }
+    throw new Error('לא התקבל טוקן');
   } catch (error) {
+    console.error('Login error details:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      responseData: error.response?.data,
+      requestedEmail: email,
+      fullUrl: `${API_BASE_URL}/users/login`
+    });
+    
     if (error.response?.status === 404) {
       throw new Error('משתמש לא קיים');
     } else if (error.response?.status === 401) {
@@ -62,5 +82,29 @@ export const loginWithGoogle = async (accessToken) => {
   } catch (error) {
     console.error('Google auth error:', error);
     throw new Error('שגיאה בהתחברות עם Google');
+  }
+};
+
+
+export const setupAuthToken = async () => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    if (token) {
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error setting up auth token:', error);
+    return false;
+  }
+};
+
+export const logout = async () => {
+  try {
+    await AsyncStorage.removeItem('authToken');
+    delete apiClient.defaults.headers.common['Authorization'];
+  } catch (error) {
+    console.error('Error during logout:', error);
   }
 };
