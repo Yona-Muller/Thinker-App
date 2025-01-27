@@ -59,7 +59,7 @@ export default function NoteCardsScreen() {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
-          'Content-Type': 'application/json',
+          // 'Content-Type': 'application/json',
         },
       });
 

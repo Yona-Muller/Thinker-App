@@ -11,7 +11,6 @@ export class NoteCardsService {
   constructor(
     @InjectRepository(NoteCard)
     private noteCardsRepository: Repository<NoteCard>,
-    private youtubeService: YouTubeService
   ) {}
 
   async create(createNoteCardDto: any): Promise<NoteCard> {

@@ -99,3 +99,12 @@ export const logout = async () => {
     console.error('Error during logout:', error);
   }
 };
+
+export default {
+  registerUser,
+  loginUser,
+  summarizeContent,
+  loginWithGoogle,
+  setupAuthToken,
+  logout
+};

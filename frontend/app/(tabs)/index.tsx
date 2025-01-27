@@ -11,7 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { NoteCard } from '@/components/NoteCard';
 import { NoteCardDetails } from '@/components/NoteCardDetails';
 
-const API_URL = 'http://192.168.1.21:4000';
+const API_URL = 'http://localhost:4000';
 
 export default function HomeScreen() {
   const handleLogout = async () => {
@@ -98,6 +98,44 @@ export default function HomeScreen() {
     setNotecards(prevCards => [newNoteCard, ...prevCards]);
   };
 
+  const handleUpdateIdeas = async (cardId, newIdeas) => {
+    try {
+      // עדכן את הרעיונות ברשימת הכרטיסים
+      setNotecards(prevCards => 
+        prevCards.map(card => 
+          card.id === cardId 
+            ? { ...card, keyTakeaways: newIdeas }
+            : card
+        )
+      );
+  
+      // אופציונלי: שמור את השינויים בשרת
+      const token = await AsyncStorage.getItem('authToken');
+      await fetch(`${API_URL}/notecards/${cardId}/ideas`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ideas: newIdeas })
+      });
+  
+      Toast.show({
+        type: 'success',
+        text1: 'הרעיונות עודכנו בהצלחה',
+        position: 'bottom',
+      });
+    } catch (error) {
+      console.error('Error updating ideas:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'שגיאה בעדכון הרעיונות',
+        position: 'bottom',
+      });
+    }
+  };
+  
+
   return (
     <ThemedView style={styles.container}>
       <TouchableOpacity 
@@ -145,6 +183,7 @@ export default function HomeScreen() {
                 <NoteCardDetails 
                   notecard={selectedCard} 
                   onClose={() => setSelectedCard(null)}
+                  onUpdateIdeas={(ideas) => handleUpdateIdeas(selectedCard.id, ideas)}
                 />
               )}
             </Modal>

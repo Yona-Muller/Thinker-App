@@ -22,7 +22,8 @@ export class NoteCardsController {
         throw new BadRequestException('sourceUrl is required');
       }
 
-      const userId = req.user.sub || req.user.userId;
+      // קבלת מזהה המשתמש מהטוקן
+      const userId = req.user.id || req.user.sub || req.user.userId;
       if (!userId) {
         throw new UnauthorizedException('User ID not found in token');
       }
@@ -41,6 +42,8 @@ export class NoteCardsController {
       };
 
       this.logger.log(`Creating notecard with data: ${JSON.stringify(noteCardData)}`);
+      
+      // יצירת הכרטיס - קריאה אחת בלבד ל-create
       const notecard = await this.noteCardsService.create(noteCardData);
       
       this.logger.log(`Created notecard with ID: ${notecard.id}`);
@@ -53,7 +56,12 @@ export class NoteCardsController {
 
   @Get()
   async findAll(@Request() req) {
-    console.log('Getting notecards for user:', req.user.id);
-    return this.noteCardsService.findAllByUser(req.user.id);
+    const userId = req.user.id || req.user.sub || req.user.userId;
+    if (!userId) {
+      throw new UnauthorizedException('User ID not found in token');
+    }
+
+    this.logger.log(`Getting notecards for user: ${userId}`);
+    return this.noteCardsService.findAllByUser(userId);
   }
 }
