@@ -2,7 +2,7 @@ import axios from 'axios';
 // import Constants from 'expo-constants';
 
 const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:4000'
+  ? 'http://192.168.1.21:4000'
   : 'http://10.0.2.2:4000';  // אם אתה משתמש באמולטור אנדרואיד
   // או
   // ? 'http://localhost:4000'
@@ -33,7 +33,7 @@ export const registerUser = async (email, name, password) => {
 export const loginUser = async (email, password) => {
   try {
     console.log('Attempting to login user:', email);
-    const response = await apiClient.post("/users/login", { email, password });
+    const response = await apiClient.post("/auth/login", { email, password });
     console.log('Login successful');
     return response.data;
   } catch (error) {

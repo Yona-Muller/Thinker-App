@@ -16,35 +16,35 @@ export default function NoteCardsScreen() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const checkServerConnection = async () => {
-    try {
-      console.log('Checking server connection...');
-      const response = await fetch(`${API_URL}/health`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
+  // const checkServerConnection = async () => {
+  //   try {
+  //     console.log('Checking server connection...');
+  //     const response = await fetch(`${API_URL}/health`, {
+  //       method: 'GET',
+  //       headers: {
+  //         'Accept': 'application/json',
+  //       },
+  //     });
       
-      const data = await response.json();
-      console.log('Server health check:', data);
-      return response.ok;
-    } catch (error) {
-      console.error('Server connection check failed:', error);
-      return false;
-    }
-  };
+  //     const data = await response.json();
+  //     console.log('Server health check:', data);
+  //     return response.ok;
+  //   } catch (error) {
+  //     console.error('Server connection check failed:', error);
+  //     return false;
+  //   }
+  // };
 
   const fetchNotecards = async () => {
     try {
       setIsLoading(true);
       
       // בדיקת חיבור לשרת
-      const isServerAvailable = await checkServerConnection();
-      if (!isServerAvailable) {
-        Alert.alert('שגיאה', 'לא ניתן להתחבר לשרת');
-        return;
-      }
+      // const isServerAvailable = await checkServerConnection();
+      // if (!isServerAvailable) {
+      //   Alert.alert('שגיאה', 'לא ניתן להתחבר לשרת');
+      //   return;
+      // }
 
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {

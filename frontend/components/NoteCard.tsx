@@ -19,7 +19,7 @@ interface NoteCardProps {
 }
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 32) / 5; // 16px padding on each side
+const CARD_WIDTH = (width - 45) / 3;
 
 export const NoteCard = ({ notecard, onPress }: NoteCardProps) => {
   return (
@@ -31,7 +31,7 @@ export const NoteCard = ({ notecard, onPress }: NoteCardProps) => {
           resizeMode="cover"
         />
         <ThemedView style={styles.contentContainer}>
-          <ThemedText style={styles.title} numberOfLines={2}>
+          <ThemedText style={styles.title} numberOfLines={3}>
             {notecard.title}
           </ThemedText>
           <ThemedView style={styles.channelInfo}>
@@ -57,6 +57,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
+    // height: 300, // גובה כולל מוגדל
     borderRadius: 12,
     backgroundColor: '#fff',
     overflow: 'hidden',
@@ -67,53 +68,35 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   thumbnail: {
-    width: '100%',
-    height: (CARD_WIDTH * 9) / 16, // 16:9 aspect ratio
+    width: '90%',
+    alignSelf: 'center',
+    height: (CARD_WIDTH * 9) / 16, // שמור על יחס 16:9
+    borderRadius: 10,
+    marginTop: 10,
     backgroundColor: '#f0f0f0',
   },
   contentContainer: {
-    padding: 12,
+    padding: 10,
+    flex: 1,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 8,
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 15,
+    lineHeight: 18,
   },
   channelInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   channelAvatar: {
-    width: 24,
+    width: 24, 
     height: 24,
-    borderRadius: 12,
+    borderRadius: 14,
     marginRight: 8,
   },
   channelName: {
     fontSize: 14,
     color: '#666',
   },
-
-
-
-  cardList: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-  },
-  cardRow: {
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  noteCard: {
-    flex: 1,
-    marginHorizontal: 8,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-}); 
+});

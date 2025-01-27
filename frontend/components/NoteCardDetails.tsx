@@ -1,26 +1,26 @@
 import React from 'react';
-import { StyleSheet, FlatList, Image, Dimensions, TouchableOpacity } from 'react-native';
+import { StyleSheet, FlatList, Dimensions, TouchableOpacity, Platform } from 'react-native';
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
+import { WebView } from 'react-native-webview';
 
 const { width } = Dimensions.get('window');
 
-export function NoteCardDetails({ notecard, onClose }) {
+export function NoteCardDetails({ notecard, onClose }: { notecard: any; onClose: () => void }) {
+  const videoId = getYouTubeId(notecard.sourceUrl);
+
   return (
     <ThemedView style={styles.container}>
       <FlatList
         ListHeaderComponent={() => (
           <>
-            <Image 
-              source={{ uri: notecard.thumbnailUrl }} 
-              style={styles.thumbnail}
-            />
+            <VideoPlayer videoId={videoId || ''} />
             <ThemedText style={styles.title}>{notecard.title}</ThemedText>
           </>
         )}
         data={[
-          ...notecard.keyTakeaways.map(item => ({ type: 'takeaway', content: item })),
-          ...notecard.thoughts.map(item => ({ type: 'thought', content: item }))
+          ...notecard.keyTakeaways.map((item: any) => ({ type: 'takeaway', content: item })),
+          ...notecard.thoughts.map((item: any) => ({ type: 'thought', content: item }))
         ]}
         renderItem={({ item }) => (
           <ThemedText style={styles.listItem}>
@@ -36,6 +36,37 @@ export function NoteCardDetails({ notecard, onClose }) {
   );
 }
 
+// פונקציה להוציא את מזהה הסרטון מקישור יוטיוב
+const getYouTubeId = (url: string) => {
+  const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+};
+
+// קומפוננטה להצגת הסרטון, עם תמיכה בדפדפן, אנדרואיד ו-iOS
+const VideoPlayer = ({ videoId }: { videoId: string }) => {
+  if (Platform.OS === 'web') {
+    return (
+      <iframe
+        width="100%"
+        height={(width * 9) / 16}
+        src={`https://www.youtube.com/embed/${videoId}`}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  } else {
+    return (
+      <WebView
+        source={{ uri: `https://www.youtube.com/embed/${videoId}` }}
+        style={styles.thumbnail}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+      />
+    );
+  }
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -43,14 +74,14 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     width: width,
-    height: (width * 9) / 16,
-    marginBottom: 16, // רווח מתחת לתמונה
+    height: (width * 9) / 16, // יחס 16:9
+    marginBottom: 16,
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 12,
-    textAlign: 'center', // יישור מרכזי של הכותרת
+    textAlign: 'center',
   },
   listItem: {
     fontSize: 16,
@@ -61,3 +92,5 @@ const styles = StyleSheet.create({
     padding: 10,
   },
 });
+
+export default NoteCardDetails;

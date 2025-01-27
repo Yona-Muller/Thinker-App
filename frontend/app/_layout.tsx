@@ -63,7 +63,7 @@ export default function RootLayout() {
         const isValid = await setupAuthToken();
         setIsAuthenticated(isValid);
         if (isValid) {
-          router.replace('/(tabs)');  // אם המשתמש מחובר, ננווט למסך הבית
+          router.replace('/(tabs)');
         }
       } catch (error) {
         console.error('Error checking auth status:', error);

@@ -7,14 +7,16 @@ export class YouTubeService {
   private readonly logger = new Logger(YouTubeService.name);
 
   constructor() {
-    if (!process.env.YOUTUBE_API_KEY) {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
       this.logger.error('YOUTUBE_API_KEY is not defined in environment variables');
       throw new Error('YOUTUBE_API_KEY is required');
     }
 
+    this.logger.log('Initializing YouTube service');
     this.youtube = google.youtube({
       version: 'v3',
-      auth: process.env.YOUTUBE_API_KEY
+      auth: apiKey
     });
   }
 
@@ -27,7 +29,7 @@ export class YouTubeService {
         id: [videoId]
       });
 
-      this.logger.log('Video API response:', videoResponse.data);
+      this.logger.debug('Video API response:', videoResponse.data);
 
       if (!videoResponse.data.items?.length) {
         this.logger.error(`Video not found for ID: ${videoId}`);
@@ -42,13 +44,13 @@ export class YouTubeService {
         id: [channelId]
       });
 
-      this.logger.log('Channel API response:', channelResponse.data);
+      this.logger.debug('Channel API response:', channelResponse.data);
 
       const result = {
         title: video.snippet.title,
-        thumbnailUrl: video.snippet.thumbnails.high.url,
+        thumbnailUrl: video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default?.url,
         channelTitle: video.snippet.channelTitle,
-        channelThumbnail: channelResponse.data.items[0].snippet.thumbnails.default.url
+        channelThumbnail: channelResponse.data.items[0].snippet.thumbnails.default?.url
       };
 
       this.logger.log('Returning video info:', result);
@@ -61,4 +63,4 @@ export class YouTubeService {
       );
     }
   }
-} 
+}

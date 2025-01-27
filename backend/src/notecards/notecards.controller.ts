@@ -52,20 +52,8 @@ export class NoteCardsController {
   }
 
   @Get()
-  async findAll(@Request() req): Promise<NoteCard[]> {
-    this.logger.log('Received GET /notecards request');
-    
-    try {
-      const userId = req.user.sub || req.user.userId;
-      this.logger.log(`Finding notecards for user ${userId}`);
-      
-      const notecards = await this.noteCardsService.findAllByUser(userId);
-      this.logger.log(`Found ${notecards.length} notecards`);
-      
-      return notecards;
-    } catch (error) {
-      this.logger.error('Error in findAll:', error);
-      throw error;
-    }
+  async findAll(@Request() req) {
+    console.log('Getting notecards for user:', req.user.id);
+    return this.noteCardsService.findAllByUser(req.user.id);
   }
 }

@@ -1,7 +1,6 @@
-import { Image, StyleSheet, Platform, TouchableOpacity, FlatList, RefreshControl, Modal } from 'react-native';
+import { Image, StyleSheet, Platform, TouchableOpacity, FlatList, RefreshControl, Modal, Alert   } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
@@ -11,6 +10,8 @@ import Toast from 'react-native-toast-message';
 import React, { useEffect, useState } from 'react';
 import { NoteCard } from '@/components/NoteCard';
 import { NoteCardDetails } from '@/components/NoteCardDetails';
+
+const API_URL = 'http://192.168.1.21:4000';
 
 export default function HomeScreen() {
   const handleLogout = async () => {
@@ -36,35 +37,50 @@ export default function HomeScreen() {
   const [notecards, setNotecards] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchNotecards = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      console.log('Fetching notecards with token:', token);
+      setIsLoading(true);
+      
+      // בדיקת חיבור לשרת
+      // const isServerAvailable = await checkServerConnection();
+      // if (!isServerAvailable) {
+      //   Alert.alert('שגיאה', 'לא ניתן להתחבר לשרת');
+      //   return;
+      // }
 
-      const response = await fetch('http://192.168.1.21:4000/notecards', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        Alert.alert('שגיאה', 'נא להתחבר מחדש');
+        return;
       }
-      
+
+      console.log('Fetching notecards...');
+      const response = await fetch(`${API_URL}/notecards`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
       const data = await response.json();
-      console.log('Fetched notecards:', data);
-      
+      console.log('Fetched notecards:', data.length);
       setNotecards(data);
     } catch (error) {
       console.error('Error fetching notecards:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'שגיאה בטעינת הכרטיסים',
-        position: 'bottom',
-      });
+      Alert.alert('שגיאה', 'בעיה בטעינת הכרטיסים');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -103,7 +119,7 @@ export default function HomeScreen() {
           </ThemedView>
         }>
 
-            <FlatList
+            <FlatList style={styles.noteCards}
               data={notecards}
               numColumns={3}
               renderItem={({ item }) => (
@@ -113,7 +129,12 @@ export default function HomeScreen() {
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
               }
-            />
+              columnWrapperStyle={{
+                justifyContent: 'space-between',  // יישור מרווחים בין העמודות
+                // paddingHorizontal: 10,            // שליטה ברווחים אופקיים בין הסרטונים
+                marginBottom: -5,                 // רווח מתחת לשורה של הסרטונים
+              }}
+              />
       
             <Modal
               visible={!!selectedCard}
@@ -183,6 +204,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  noteCards:{
+    marginHorizontal: -22,
+
   },
   // cardList: {
   //   paddingHorizontal: 16,
