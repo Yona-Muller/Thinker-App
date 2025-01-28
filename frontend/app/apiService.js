@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { API_URL } from '@/config';
 // import Constants from 'expo-constants';
 
-const API_BASE_URL = __DEV__ 
-  ? 'http://192.168.1.21:4000'
-  : 'http://10.0.2.2:4000';  // אם אתה משתמש באמולטור אנדרואיד
+const API_BASE_URL = API_URL 
+  // ? 'http://192.168.1.21:4000'
+  // : 'http://10.0.2.2:4000';  // אם אתה משתמש באמולטור אנדרואיד
   // או
   // ? 'http://localhost:4000'
   // : 'https://your-production-url.com';

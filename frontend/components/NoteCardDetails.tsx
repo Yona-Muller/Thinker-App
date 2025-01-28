@@ -23,13 +23,12 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas }: { notecard
     try {
       setIsGeneratingIdeas(true);
       
-      // Get the auth token
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
-      // Determine if we're analyzing video or text
+  
+      // שלב 1: ניתוח התוכן והפקת רעיונות
       const endpoint = videoId ? 'analyze_video' : 'analyze_text';
       const payload = videoId ? {
         video_url: `https://www.youtube.com/watch?v=${videoId}`,
@@ -38,25 +37,9 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas }: { notecard
         text: notecard.content || notecard.keyTakeaways?.join('\n') || '',
         model: selectedModel
       };
-
-      const url = `${API_URL}/${endpoint}`;
-      console.log('Request URL:', url);
-      console.log('Request Payload:', payload);
-      console.log('Request Headers:', {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token.substring(0, 10)}...` // רק להראות חלק מהטוקן
-      });
-      
-      // בדיקה שהשרת זמין
-      try {
-        const healthCheck = await fetch(`${API_URL}/`);
-        console.log('Server health check status:', healthCheck.status);
-      } catch (error) {
-        console.error('Server health check failed:', error);
-        throw new Error('השרת אינו זמין. אנא בדוק את החיבור לשרת.');
-      }
-
-      const response = await fetch(url, {
+  
+      // קריאה ראשונה לניתוח
+      const analysisResponse = await fetch(`${API_URL}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,36 +47,37 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas }: { notecard
         },
         body: JSON.stringify(payload)
       });
-
-      console.log('Response status:', response.status);
-      
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
-
-      if (!response.ok) {
-        try {
-          const errorData = JSON.parse(responseText);
-          throw new Error(errorData.detail || 'Failed to generate ideas');
-        } catch (e) {
-          throw new Error(`Server error: ${response.status} - ${responseText}`);
-        }
+  
+      if (!analysisResponse.ok) {
+        throw new Error(`Analysis failed: ${await analysisResponse.text()}`);
       }
-
-      const data = JSON.parse(responseText);
-      console.log('Parsed response:', data);
-
-      if (data.ideas) {
-        onUpdateIdeas(data.ideas);
-        Toast.show({
-          type: 'success',
-          text1: 'הצלחה',
-          text2: 'הרעיונות נוצרו בהצלחה'
-        });
-      } else {
-        throw new Error('No ideas returned from server');
+  
+      const analysisData = await analysisResponse.json();
+  
+      // שלב 2: שמירת הרעיונות ל-notecard
+      const updateResponse = await fetch(`${API_URL}/note_card/${notecard.id}/ideas`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ideas: analysisData.ideas })
+      });
+  
+      if (!updateResponse.ok) {
+        throw new Error(`Failed to save ideas: ${await updateResponse.text()}`);
       }
+  
+      // עדכון ממשק המשתמש
+      onUpdateIdeas(analysisData.ideas);
+      Toast.show({
+        type: 'success',
+        text1: 'הצלחה',
+        text2: 'הרעיונות נוצרו ונשמרו בהצלחה'
+      });
+  
     } catch (error) {
-      console.error('Full error details:', error); 
+      console.error('Full error details:', error);
       Toast.show({
         type: 'error',
         text1: 'שגיאה',

@@ -425,33 +425,33 @@ def get_video_transcript(video_id: str) -> str:
 async def health_check():
     return {"status": "ok"}
 
-@app.put("/notecards/{notecard_id}/ideas")
+@app.put("/note_card/{notecard_id}/ideas")
 async def update_notecard_ideas(notecard_id: int, ideas: dict):
     try:
-        # יצירת חיבור למסד הנתונים
         conn = psycopg2.connect(
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
+            dbname=os.getenv("DB_DATABASE"),
+            user=os.getenv("DB_USERNAME"),
             password=os.getenv("DB_PASSWORD"),
             host=os.getenv("DB_HOST")
         )
         cursor = conn.cursor()
 
-        # עדכון הרעיונות בטבלה
+        # שינוי: המרת ה-ideas למערך של מחרוזות כפי שמוגדר במודל
+        ideas_array = ideas["ideas"] if isinstance(ideas["ideas"], list) else [ideas["ideas"]]
+        
         update_query = """
-            UPDATE notecards 
-            SET key_takeaways = %s 
+            UPDATE note_card
+            SET "keyTakeaways" = %s 
             WHERE id = %s 
             RETURNING id;
         """
-        cursor.execute(update_query, (json.dumps(ideas["ideas"]), notecard_id))
+        # שינוי: העברת המערך ישירות, ללא המרה ל-JSON
+        cursor.execute(update_query, (ideas_array, notecard_id))
         
-        # בדיקה אם העדכון הצליח
         updated_row = cursor.fetchone()
         if not updated_row:
             raise HTTPException(status_code=404, detail="Notecard not found")
 
-        # שמירת השינויים וסגירת החיבור
         conn.commit()
         cursor.close()
         conn.close()
