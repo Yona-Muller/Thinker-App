@@ -54,12 +54,13 @@ export const NoteCard = ({ notecard, onPress }: NoteCardProps) => {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
+    backgroundColor: '#fff',
   },
   card: {
     width: CARD_WIDTH,
-    // height: 300, // גובה כולל מוגדל
+    // height: 210,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    // backgroundColor: '#f0f0f0',
     overflow: 'hidden',
     elevation: 5,
     shadowColor: '#000',

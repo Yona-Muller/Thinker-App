@@ -6,8 +6,9 @@ import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { ThemedText } from './ThemedText';
 import { useNotecards } from '../context/NotecardContext';
+import { API_URL } from '@/config'
 
-const API_URL = 'http://192.168.1.21:4000'; // או 'http://localhost:4000';
+// const API_URL = 'http://192.168.1.21:4000'; // או 'http://localhost:4000';
 
 export function SearchBar() {
   const [url, setUrl] = useState('');
@@ -95,7 +96,7 @@ export function SearchBar() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Failed to create notecard:', response.status, errorText);
-        throw new Error('Failed to create notecard');
+        throw new Error('Failed to create notec300ard');
       }
 
       const newNoteCard = await response.json();
