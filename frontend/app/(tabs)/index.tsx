@@ -6,6 +6,7 @@ import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { SearchBar } from '@/components/SearchBar';
+import { StoryHighlights } from '@/components/StoryHighlights';
 import Toast from 'react-native-toast-message';
 import React, { useEffect, useState } from 'react';
 import { NoteCard } from '@/components/NoteCard';
@@ -123,11 +124,7 @@ export default function HomeScreen() {
         headerBackgroundColor={{ light: '#e6f8fa', dark: '#1D3D47' }}
         headerImage={
           <ThemedView style={styles.headerContainer}>
-            <Image
-              source={require('@/assets/images/partial-react-logo.png')}
-              style={styles.thinkerLogo}
-            />
-            <ThemedText style={styles.headerText}>Thinker</ThemedText>
+            <StoryHighlights notecards={notecards} />
           </ThemedView>
         }
       >
@@ -173,9 +170,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    height: 100,
-    left: 35,
-    top: 100,
+    height: 130,
+    paddingTop: 40,
     backgroundColor: 'transparent',
   },
   headerText: {

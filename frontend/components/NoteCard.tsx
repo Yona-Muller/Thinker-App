@@ -30,7 +30,7 @@ export const NoteCard = ({ notecard, onPress }: NoteCardProps) => {
           style={styles.thumbnail}
           resizeMode="cover"
         />
-        <ThemedView style={styles.contentContainer}>
+        <ThemedView style={styles.contentContainer} lightColor="#6182EA">
           <ThemedText style={styles.title} numberOfLines={3}>
             {notecard.title}
           </ThemedText>
@@ -54,13 +54,12 @@ export const NoteCard = ({ notecard, onPress }: NoteCardProps) => {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
-    backgroundColor: '#fff',
   },
   card: {
     width: CARD_WIDTH,
-    // height: 210,
+    // height: 300,
     borderRadius: 12,
-    // backgroundColor: '#f0f0f0',
+    backgroundColor: '#6182EA',
     overflow: 'hidden',
     elevation: 5,
     shadowColor: '#000',
@@ -74,7 +73,7 @@ const styles = StyleSheet.create({
     height: (CARD_WIDTH * 9) / 16, // שמור על יחס 16:9
     borderRadius: 10,
     marginTop: 10,
-    backgroundColor: '#f0f0f0',
+    // backgroundColor: '#f0f0f0',
   },
   contentContainer: {
     padding: 10,
@@ -85,10 +84,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 15,
     lineHeight: 18,
+    color: '#fff'
   },
   channelInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#6182EA',
   },
   channelAvatar: {
     width: 24, 
@@ -98,6 +99,6 @@ const styles = StyleSheet.create({
   },
   channelName: {
     fontSize: 14,
-    color: '#666',
+    color: '#fff',
   },
 });

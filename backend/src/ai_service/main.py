@@ -510,7 +510,7 @@ async def analyze_video(request: VideoRequest):
 
         if request.model == "openai":
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=[
                     {"role": "system", "content": "Extract 10 main ideas from the following text. Format them as a numbered list."},
                     {"role": "user", "content": transcript}

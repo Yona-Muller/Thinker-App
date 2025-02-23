@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
-import { StyleSheet, FlatList, Dimensions, TouchableOpacity, Platform, TouchableWithoutFeedback, View, Alert } from 'react-native';
+import { StyleSheet, FlatList, Dimensions, TouchableOpacity, Platform, TouchableWithoutFeedback, View, Alert, Modal } from 'react-native';
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 import { WebView } from 'react-native-webview';
 import { Picker } from '@react-native-picker/picker';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
 import { API_URL_P } from '@/config';
 import { MaterialIcons } from '@expo/vector-icons';
+import { IdeaSelectionScreen } from './IdeaSelection';
 
 const { width } = Dimensions.get('window');
 
-const getYouTubeId = (url) => {
-  if (!url) return null;
+const getYouTubeId = (url: string) => {
   const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   return match ? match[1] : null;
 };
-
 
 export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) {
   const videoId = getYouTubeId(notecard.sourceUrl);
@@ -25,6 +23,8 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [keyTakeaways, setKeyTakeaways] = useState(notecard.keyTakeaways || []);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showIdeaSelection, setShowIdeaSelection] = useState(false);
+  const [generatedIdeas, setGeneratedIdeas] = useState([]);
 
   const generateIdeas = async () => {
     try {
@@ -35,7 +35,6 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
         throw new Error('No auth token found');
       }
   
-      // שלב 1: ניתוח התוכן והפקת רעיונות
       const endpoint = videoId ? 'analyze_video' : 'analyze_text';
       const payload = videoId ? {
         video_url: `https://www.youtube.com/watch?v=${videoId}`,
@@ -45,7 +44,6 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
         model: selectedModel
       };
   
-      // קריאה ראשונה לניתוח
       const analysisResponse = await fetch(`${API_URL_P}/${endpoint}`, {
         method: 'POST',
         headers: {
@@ -60,28 +58,8 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
       }
   
       const analysisData = await analysisResponse.json();
-  
-      // שלב 2: שמירת הרעיונות ל-notecard
-      const updateResponse = await fetch(`${API_URL_P}/note_card/${notecard.id}/ideas`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ ideas: analysisData.ideas })
-      });
-  
-      if (!updateResponse.ok) {
-        throw new Error(`Failed to save ideas: ${await updateResponse.text()}`);
-      }
-  
-      // עדכון ממשק המשתמש
-      onUpdateIdeas(analysisData.ideas);
-      Toast.show({
-        type: 'success',
-        text1: 'הצלחה',
-        text2: 'הרעיונות נוצרו ונשמרו בהצלחה'
-      });
+      setGeneratedIdeas(analysisData.ideas);
+      setShowIdeaSelection(true);
   
     } catch (error) {
       console.error('Full error details:', error);
@@ -95,6 +73,39 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
     }
   };
 
+  const handleConfirmSelection = async (selectedIdeas) => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      const response = await fetch(`${API_URL_P}/note_card/${notecard.id}/ideas`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ideas: selectedIdeas })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save ideas');
+      }
+
+      setKeyTakeaways(selectedIdeas);
+      onUpdateIdeas(selectedIdeas);
+      setShowIdeaSelection(false);
+
+      Toast.show({
+        type: 'success',
+        text1: 'הרעיונות נשמרו בהצלחה'
+      });
+
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'שגיאה',
+        text2: error.message || 'אירעה שגיאה בשמירת הרעיונות'
+      });
+    }
+  };
 
   const deleteNoteCard = async (noteCardId) => {
     try {
@@ -153,11 +164,11 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
 
         <FlatList
           ListHeaderComponent={() => (
-            <>
-              {videoId && <VideoPlayer videoId={videoId} />}
-              <ThemedText style={styles.title}>{notecard.title}</ThemedText>
-            </>
-          )}
+          <>
+            <VideoPlayer videoId={videoId || ''} />
+            <ThemedText style={styles.title}>{notecard.title}</ThemedText>
+          </>
+        )}
           data={[
             ...(keyTakeaways || []).map((item) => ({ type: 'takeaway', content: item })),
             ...(notecard.thoughts || []).map((item) => ({ type: 'thought', content: item }))
@@ -180,27 +191,39 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
             <Picker.Item label="DeepSeek" value="deepseek" />
           </Picker>
           <TouchableOpacity 
-          style={[
-            styles.generateButton,
-            isGeneratingIdeas && styles.generateButtonDisabled
-          ]}
-          onPress={generateIdeas}
-          disabled={isGeneratingIdeas}
-        >
-          <ThemedText style={styles.generateButtonText}>
-            {isGeneratingIdeas ? 'מייצר רעיונות...' : 'ייצר רעיונות'}
-          </ThemedText>
-        </TouchableOpacity>
+            style={[
+              styles.generateButton,
+              isGeneratingIdeas && styles.generateButtonDisabled
+            ]}
+            onPress={generateIdeas}
+            disabled={isGeneratingIdeas}
+          >
+            <ThemedText style={styles.generateButtonText}>
+              {isGeneratingIdeas ? 'creating ideas...' : 'creat ideas'}
+            </ThemedText>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <ThemedText>סגור</ThemedText>
+          <ThemedText>close</ThemedText>
         </TouchableOpacity>
+
+        <Modal
+          visible={showIdeaSelection}
+          animationType="slide"
+          onRequestClose={() => setShowIdeaSelection(false)}
+        >
+          <IdeaSelectionScreen
+            ideas={generatedIdeas}
+            onConfirmSelection={handleConfirmSelection}
+            onClose={() => setShowIdeaSelection(false)}
+          />
+        </Modal>
       </ThemedView>
     </TouchableWithoutFeedback>
   );
 }
 
-const VideoPlayer = ({ videoId }) => {
+const VideoPlayer = ({ videoId }: { videoId: string }) => {
   if (Platform.OS === 'web') {
     return (
       <iframe
@@ -216,21 +239,25 @@ const VideoPlayer = ({ videoId }) => {
     return (
       <WebView
         source={{ uri: `https://www.youtube.com/embed/${videoId}` }}
-        style={{ width: width, height: (width * 9) / 16, marginBottom: 16 }}
+        style={styles.thumbnail}
         javaScriptEnabled={true}
         domStorageEnabled={true}
+        mediaPlaybackRequiresUserAction={false} 
       />
     );
   }
 };
-
-
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: '#fff'
    },
+   thumbnail: {
+    width: width,
+    height: (width * 9) / 16, // יחס 16:9
+    marginBottom: 16,
+  },
   header: { 
     flexDirection: 'row',
     justifyContent: 'flex-end', 
@@ -244,7 +271,8 @@ const styles = StyleSheet.create({
     top: 30, 
     right: 10, 
     backgroundColor: 'white', 
-    padding: 10, borderRadius: 5, 
+    padding: 10, 
+    borderRadius: 5, 
     shadowOpacity: 0.3, 
     shadowRadius: 5,
     elevation: 10,
@@ -289,8 +317,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  generateButtonDisabled:{
-
+  generateButtonDisabled: {
+    opacity: 0.5
   }
 });
 
