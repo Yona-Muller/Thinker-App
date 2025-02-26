@@ -25,6 +25,9 @@ export class NoteCard {
   @Column("text", { array: true })
   thoughts: string[];
 
+  @Column("text", { array: true })
+  tags: string[];
+
   @Column({ nullable: true })
   thumbnailUrl: string;
 

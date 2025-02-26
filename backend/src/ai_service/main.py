@@ -366,39 +366,6 @@ class VideoRequest(BaseModel):
     video_url: str
     model: str
 
-def analyze_with_deepseek(text: str) -> list:
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": "deepseek-chat",
-        "messages": [
-            {
-                "role": "system",
-                "content": "Extract 10 main ideas from the following text. Format them as a numbered list."
-            },
-            {
-                "role": "user",
-                "content": text
-            }
-        ]
-    }
-    
-    response = requests.post(
-        "https://api.deepseek.com/v1/chat/completions",
-        json=data,
-        headers=headers
-    )
-    
-    if response.status_code != 200:
-        raise Exception(f"DeepSeek API error: {response.text}")
-        
-    result = response.json()
-    ideas = result['choices'][0]['message']['content'].split("\n")
-    return ideas
-
 def get_video_id(url: str) -> str:
     """Extract video ID from various YouTube URL formats"""
     patterns = [
@@ -421,12 +388,49 @@ def get_video_transcript(video_id: str) -> str:
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Could not fetch transcript: {str(e)}")
 
-@app.get("/")
-async def health_check():
-    return {"status": "ok"}
+
+def analyze_with_deepseek(text: str) -> dict:
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    data = {
+        "model": "deepseek-chat",
+        "messages": [
+            {
+                "role": "system",
+                "content": """Analyze the following text and provide:
+                1. Extract 10 main ideas (format them as a numbered list)
+                2. Generate 5-10 relevant tags that categorize the content (in English)
+                
+                Format the response as JSON:
+                {
+                    "ideas": ["idea1", "idea2", ...],
+                    "tags": ["tag1", "tag2", ...]
+                }"""
+            },
+            {
+                "role": "user",
+                "content": text
+            }
+        ]
+    }
+    
+    response = requests.post(
+        "https://api.deepseek.com/v1/chat/completions",
+        json=data,
+        headers=headers
+    )
+    
+    if response.status_code != 200:
+        raise Exception(f"DeepSeek API error: {response.text}")
+        
+    result = response.json()
+    return json.loads(result['choices'][0]['message']['content'])
 
 @app.put("/note_card/{notecard_id}/ideas")
-async def update_notecard_ideas(notecard_id: int, ideas: dict):
+async def update_notecard_ideas(notecard_id: int, data: dict):
     try:
         conn = psycopg2.connect(
             dbname=os.getenv("DB_DATABASE"),
@@ -436,17 +440,17 @@ async def update_notecard_ideas(notecard_id: int, ideas: dict):
         )
         cursor = conn.cursor()
 
-        # שינוי: המרת ה-ideas למערך של מחרוזות כפי שמוגדר במודל
-        ideas_array = ideas["ideas"] if isinstance(ideas["ideas"], list) else [ideas["ideas"]]
+        ideas_array = data["ideas"] if isinstance(data["ideas"], list) else [data["ideas"]]
+        tags_array = data.get("tags", []) if isinstance(data.get("tags"), list) else []
         
         update_query = """
             UPDATE note_card
-            SET "keyTakeaways" = %s 
+            SET "keyTakeaways" = %s, 
+                "tags" = %s
             WHERE id = %s 
             RETURNING id;
         """
-        # שינוי: העברת המערך ישירות, ללא המרה ל-JSON
-        cursor.execute(update_query, (ideas_array, notecard_id))
+        cursor.execute(update_query, (ideas_array, tags_array, notecard_id))
         
         updated_row = cursor.fetchone()
         if not updated_row:
@@ -456,7 +460,7 @@ async def update_notecard_ideas(notecard_id: int, ideas: dict):
         cursor.close()
         conn.close()
 
-        return {"status": "success", "message": "Ideas updated successfully"}
+        return {"status": "success", "message": "Ideas and tags updated successfully"}
 
     except psycopg2.Error as e:
         print(f"Database error: {e}")
@@ -472,29 +476,49 @@ async def analyze_text(request: TextRequest):
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "Extract 10 main ideas from the following text. Format them as a numbered list."},
+                    {"role": "system", "content": """Analyze the following text and provide:
+                    1. Extract 10 main ideas (format them as a numbered list)
+                    2. Generate 5-10 relevant tags that categorize the content (in English)
+                    
+                    Format the response as JSON:
+                    {
+                        "ideas": ["idea1", "idea2", ...],
+                        "tags": ["tag1", "tag2", ...]
+                    }"""},
                     {"role": "user", "content": request.text}
                 ]
             )
-            ideas = response.choices[0].message.content.split("\n")
+            result = json.loads(response.choices[0].message.content)
 
         elif request.model == "gemini":
             model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(
-                f"Extract 10 main ideas from the following text:\n\n{request.text}"
-            )
-            ideas = response.text.split("\n")
+            prompt = f"""Analyze the following text and provide:
+            1. Extract 10 main ideas
+            2. Generate 5-10 relevant tags that categorize the content (in English)
+            
+            Format the response as JSON:
+            {{
+                "ideas": ["idea1", "idea2", ...],
+                "tags": ["tag1", "tag2", ...]
+            }}
+            
+            Text to analyze:
+            {request.text}"""
+            
+            response = model.generate_content(prompt)
+            result = json.loads(response.text)
 
         elif request.model == "deepseek":
-            ideas = analyze_with_deepseek(request.text)
+            result = analyze_with_deepseek(request.text)
 
         else:
             raise HTTPException(status_code=400, detail="Invalid model selection")
 
         # Clean and process results
-        ideas = [idea.strip().lstrip("0123456789. ") for idea in ideas if idea.strip()][:10]
+        ideas = [idea.strip().lstrip("0123456789. ") for idea in result["ideas"] if idea.strip()][:10]
+        tags = [tag.lower().strip() for tag in result["tags"] if tag.strip()]
         
-        return {"ideas": ideas}
+        return {"ideas": ideas, "tags": tags}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -512,32 +536,54 @@ async def analyze_video(request: VideoRequest):
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "Extract 10 main ideas from the following text. Format them as a numbered list."},
+                    {"role": "system", "content": """Analyze the following text and provide:
+                    1. Extract 10 main ideas (format them as a numbered list)
+                    2. Generate 5-10 relevant tags that categorize the content (in English)
+                    
+                    Format the response as JSON:
+                    {
+                        "ideas": ["idea1", "idea2", ...],
+                        "tags": ["tag1", "tag2", ...]
+                    }"""},
                     {"role": "user", "content": transcript}
                 ]
             )
-            ideas = response.choices[0].message.content.split("\n")
+            result = json.loads(response.choices[0].message.content)
 
         elif request.model == "gemini":
             model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(
-                f"Extract 10 main ideas from the following text:\n\n{transcript}"
-            )
-            ideas = response.text.split("\n")
+            prompt = f"""Analyze the following text and provide:
+            1. Extract 10 main ideas
+            2. Generate 5-10 relevant tags that categorize the content (in English)
+            
+            Format the response as JSON:
+            {{
+                "ideas": ["idea1", "idea2", ...],
+                "tags": ["tag1", "tag2", ...]
+            }}
+            
+            Text to analyze:
+            {transcript}"""
+            
+            response = model.generate_content(prompt)
+            result = json.loads(response.text)
 
         elif request.model == "deepseek":
-            ideas = analyze_with_deepseek(transcript)
+            result = analyze_with_deepseek(transcript)
 
         else:
             raise HTTPException(status_code=400, detail="Invalid model selection")
 
         # Clean and process results
-        ideas = [idea.strip().lstrip("0123456789. ") for idea in ideas if idea.strip()][:10]
+        ideas = [idea.strip().lstrip("0123456789. ") for idea in result["ideas"] if idea.strip()][:10]
+        tags = [tag.lower().strip() for tag in result["tags"] if tag.strip()]
+        print(tags)
         
-        return {"ideas": ideas}
+        return {"ideas": ideas, "tags": tags}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 import asyncio
 if __name__ == "__main__":
     # video_request = VideoRequest(video_url="https://www.youtube.com/watch?v=-2k1rcRzsLA", model="openai")

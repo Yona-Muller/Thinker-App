@@ -26,6 +26,55 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
   const [showIdeaSelection, setShowIdeaSelection] = useState(false);
   const [generatedIdeas, setGeneratedIdeas] = useState([]);
 
+  // const generateIdeas = async () => {
+  //   try {
+  //     setIsGeneratingIdeas(true);
+      
+  //     const token = await AsyncStorage.getItem('authToken');
+  //     if (!token) {
+  //       throw new Error('No auth token found');
+  //     }
+  
+  //     const endpoint = videoId ? 'analyze_video' : 'analyze_text';
+  //     const payload = videoId ? {
+  //       video_url: `https://www.youtube.com/watch?v=${videoId}`,
+  //       model: selectedModel
+  //     } : {
+  //       text: notecard.content || notecard.keyTakeaways?.join('\n') || '',
+  //       model: selectedModel
+  //     };
+  
+  //     const analysisResponse = await fetch(`${API_URL_P}/${endpoint}`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': `Bearer ${token}`
+  //       },
+  //       body: JSON.stringify(payload)
+  //     });
+  
+  //     if (!analysisResponse.ok) {
+  //       throw new Error(`Analysis failed: ${await analysisResponse.text()}`);
+  //     }
+  
+  //     const analysisData = await analysisResponse.json();
+  //     setGeneratedIdeas(analysisData.ideas);
+  //     setShowIdeaSelection(true);
+  
+  //   } catch (error) {
+  //     console.error('Full error details:', error);
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'שגיאה',
+  //       text2: error.message || 'אירעה שגיאה בעת יצירת הרעיונות'
+  //     });
+  //   } finally {
+  //     setIsGeneratingIdeas(false);
+  //   }
+  // };
+
+  const [generatedTags, setGeneratedTags] = useState([]);
+
   const generateIdeas = async () => {
     try {
       setIsGeneratingIdeas(true);
@@ -34,7 +83,7 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
       if (!token) {
         throw new Error('No auth token found');
       }
-  
+
       const endpoint = videoId ? 'analyze_video' : 'analyze_text';
       const payload = videoId ? {
         video_url: `https://www.youtube.com/watch?v=${videoId}`,
@@ -43,7 +92,7 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
         text: notecard.content || notecard.keyTakeaways?.join('\n') || '',
         model: selectedModel
       };
-  
+
       const analysisResponse = await fetch(`${API_URL_P}/${endpoint}`, {
         method: 'POST',
         headers: {
@@ -52,15 +101,16 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
         },
         body: JSON.stringify(payload)
       });
-  
+
       if (!analysisResponse.ok) {
         throw new Error(`Analysis failed: ${await analysisResponse.text()}`);
       }
-  
+
       const analysisData = await analysisResponse.json();
       setGeneratedIdeas(analysisData.ideas);
+      setGeneratedTags(analysisData.tags); // שמור את התגים
       setShowIdeaSelection(true);
-  
+
     } catch (error) {
       console.error('Full error details:', error);
       Toast.show({
@@ -82,11 +132,14 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ ideas: selectedIdeas })
+        body: JSON.stringify({ 
+          ideas: selectedIdeas,
+          tags: generatedTags // שלח את התגים שנשמרו
+        })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save ideas');
+        throw new Error('Failed to save ideas and tags');
       }
 
       setKeyTakeaways(selectedIdeas);
@@ -95,14 +148,14 @@ export function NoteCardDetails({ notecard, onClose, onUpdateIdeas, onDelete }) 
 
       Toast.show({
         type: 'success',
-        text1: 'הרעיונות נשמרו בהצלחה'
+        text1: 'הרעיונות והתגים נשמרו בהצלחה'
       });
 
     } catch (error) {
       Toast.show({
         type: 'error',
         text1: 'שגיאה',
-        text2: error.message || 'אירעה שגיאה בשמירת הרעיונות'
+        text2: error.message || 'אירעה שגיאה בשמירת הרעיונות והתגים'
       });
     }
   };
