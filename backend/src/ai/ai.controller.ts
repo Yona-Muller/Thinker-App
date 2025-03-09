@@ -15,4 +15,4 @@ export class AiController {
       ideas: await this.aiService.generateIdeas(body.text, body.model)
     };
   }
-} 
+}  
