@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { User } from '../users/user.entity';
 
 @Entity()
 export class Summary {
@@ -12,6 +11,6 @@ export class Summary {
   @Column()
   createdAt: Date;
 
-  @ManyToOne(() => User, (user) => user.id)
-  user: User;
+  @Column('text')
+  userId: string;
 }

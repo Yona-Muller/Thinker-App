@@ -1,7 +1,7 @@
 import { Injectable, HttpException, HttpStatus, Logger, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NoteCard } from './notecard.entity';
+import { NoteCard } from './entities/notecard.entity';
 import { YouTubeService } from '../youtube/youtube.service';
 
 @Injectable()

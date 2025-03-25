@@ -1,19 +1,24 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+import { IsPublic } from './utils/decorators/isPublic.decorator';
+import { version } from '../package.json';
 
 @Controller()
 export class AppController {
-  private readonly logger = new Logger(AppController.name);
+  constructor(private readonly appService: AppService) {}
 
-  constructor() {}
+  @IsPublic()
+  @Get()
+  getHello(): string {
+    return this.appService.getHello();
+  }
 
-  @Get('health')
-  healthCheck() {
-    this.logger.log('Health check requested');
-    
-    return { 
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development'
+  @IsPublic()
+  @Get('version')
+  getVersion() {
+    return {
+      version,
+      gitHash: process.env.GIT_HASH || 'unknown',
     };
   }
 }

@@ -1,58 +1,29 @@
 import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from './users/users.module';
-import { User } from './users/user.entity';
-import { NoteCardsModule } from './notecards/notecards.module';
-import { NoteCard } from './notecards/notecard.entity';
 import { AuthModule } from './auth/auth.module';
-import { YouTubeService } from './youtube/youtube.service';
-import { YouTubeModule } from './youtube/youtube.module';
-
+import { MailService } from './utils/mail/mail.service';
+import { DatabaseModule } from './database/database.module';
+import { UsersModule } from './users/user.module';
+import { JwtModule } from '@nestjs/jwt';
+import { TOKEN_EXPIRATION_TIME } from './auth/constants';
 @Module({
   imports: [
-    ConfigModule.forRoot(),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'Shloimy-Yona',
-      database: 'thinker_data',
-      entities: [User, NoteCard],
-      synchronize: false,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: `./env/.${process.env.NODE_ENV}.env`,
     }),
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: TOKEN_EXPIRATION_TIME },
+    }),
+    DatabaseModule,
     UsersModule,
-    NoteCardsModule,
     AuthModule,
-    YouTubeModule,
   ],
-  providers: [YouTubeService],
-  exports: [YouTubeService],
+  controllers: [AppController],
+  providers: [AppService, MailService],
 })
-export class AppModule {}// import { Module } from '@nestjs/common';
-// import { TypeOrmModule } from '@nestjs/typeorm';
-// import { UsersModule } from './users/users.module';
-// import { NoteCardsModule } from './notecards/notecards.module';
-// import { AuthModule } from './auth/auth.module'; // וודא שזה מיובא
-// import { User } from './users/user.entity';
-// import { NoteCard } from './notecards/notecard.entity';
-
-// @Module({
-//   imports: [
-//     TypeOrmModule.forRoot({
-//       type: 'postgres',
-//       host: 'localhost',
-//       port: 5432,
-//       username: 'postgres',
-//       password: 'Shloimy-Yona',
-//       database: 'thinker_data',
-//       entities: [User, NoteCard],
-//       synchronize: false,
-//     }),
-//     UsersModule,
-//     NoteCardsModule,
-//     AuthModule, // וודא שזה נמצא כאן
-//   ],
-// })
-// export class AppModule {}
+export class AppModule {}
