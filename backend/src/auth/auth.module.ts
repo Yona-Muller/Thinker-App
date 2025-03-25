@@ -1,22 +1,22 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { UsersModule } from 'src/users/user.module';
 import { AuthController } from './auth.controller';
-import { UsersModule } from '../users/users.module';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { JwtStrategy } from './jwt.strategy';
+import { AuthGuard } from './auth.guard';
+import { APP_GUARD } from '@nestjs/core';
+import { TokenService } from './token.service';
+import { MailModule } from 'src/utils/mail/mail.module';
 
 @Module({
-  imports: [
-    UsersModule,
-    PassportModule,
-    JwtModule.register({
-      secret: 'your-secret-key', // בפרויקט אמיתי זה צריך להיות ב-.env
-      signOptions: { expiresIn: '24h' },
-    }),
-  ],
-  providers: [AuthService, JwtStrategy],
+  imports: [UsersModule, MailModule],
   controllers: [AuthController],
-  exports: [AuthService],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+    AuthService,
+    TokenService,
+  ],
 })
-export class AuthModule {} 
+export class AuthModule {}

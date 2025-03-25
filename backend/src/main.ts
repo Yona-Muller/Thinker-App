@@ -13,12 +13,10 @@ async function bootstrap() {
     credentials: true
   });
 
-  // הסר את זה אם קיים
   // app.setGlobalPrefix('api');
 
-  await app.listen(4000, '0.0.0.0');
+  await app.listen(3000, '0.0.0.0');
   
-  // הדפס את כל הנתיבים הזמינים
   const server = app.getHttpServer();
   const router = server._events.request._router;
   

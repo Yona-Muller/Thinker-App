@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>Your Wallet Link</h1>
+    <p>Click the button below to add your pass to your wallet:</p>
+
+    <!-- Dynamic Google Wallet Link -->
+    <a href="{{link}}" style="text-decoration: none;">
+      <img src="cid:google-wallet-image" 
+           alt="{{alt}}" 
+           style="height: 40px;">
+    </a>
+
+    <!-- Dynamic Apple Wallet Link -->
+    <a href="{{link}}" style="text-decoration: none; margin-left: 10px;">
+      <img src="cid:apple-wallet-image"
+           alt="{{alt}}" 
+           style="height: 40px;">
+    </a>
+    <div>{{walletLinks}}</div>
+
+    <p>Thank you for using our service!</p>
+  </body>
+</html>
