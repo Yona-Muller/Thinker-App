@@ -1,8 +1,10 @@
-import { Injectable, HttpException, HttpStatus, Logger, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NoteCard } from './entities/notecard.entity';
-import { YouTubeService } from '../youtube/youtube.service';
+import { CreateNoteCardDto } from './dto/create-notecerd.dto';
+import { UpdateNoteCardDto } from './dto/update-notecerd.dto';
+import { PaginationDto } from 'src/utils/pagination/paginated.query.param.dto';
 
 @Injectable()
 export class NoteCardsService {
@@ -10,52 +12,69 @@ export class NoteCardsService {
 
   constructor(
     @InjectRepository(NoteCard)
-    private noteCardsRepository: Repository<NoteCard>,
+    private readonly noteCardsRepository: Repository<NoteCard>
   ) {}
 
-  async create(createNoteCardDto: any): Promise<NoteCard> {
-    try {
-      this.logger.log('Creating new notecard');
-      this.logger.log(`Data: ${JSON.stringify(createNoteCardDto)}`);
-      
-      const notecard = this.noteCardsRepository.create(createNoteCardDto);
-      const result = await this.noteCardsRepository.save(notecard);
-      
-      // טיפול במקרה שמקבלים מערך
-      const savedNotecard: NoteCard = Array.isArray(result) ? result[0] : result;
-      
-      this.logger.log(`Saved notecard: ${JSON.stringify(savedNotecard)}`);
-      
-      if (!savedNotecard || !savedNotecard.id) {
-        throw new InternalServerErrorException('Failed to create notecard');
-      }
+  async findAll(paginationDto: PaginationDto): Promise<any> {
+    const { page = 1, limit = 100 } = paginationDto;
+    const skip = (page - 1) * limit;
 
-      return savedNotecard;
-    } catch (error) {
-      this.logger.error('Error creating notecard:', error);
-      throw new InternalServerErrorException('Failed to create notecard: ' + error.message);
-    }
-  }
-
-  async findAllByUser(userId: number): Promise<NoteCard[]> {
     try {
-      this.logger.log(`Finding notecards for user ${userId}`);
-      const notecards = await this.noteCardsRepository.find({
-        where: { userId },
-        order: { createdAt: 'DESC' }
+      const [data, total] = await this.noteCardsRepository.findAndCount({
+        skip,
+        take: limit,
       });
-      this.logger.log(`Found ${notecards.length} notecards`);
-      return notecards;
+      return { data, total, page, limit };
     } catch (error) {
-      this.logger.error('Error finding notecards:', error);
-      throw new InternalServerErrorException('Failed to fetch notecards: ' + error.message);
+      this.logger.error(`Error in findAll: ${error.message}`);
+      throw error;
     }
   }
 
-  async findOne(id: number): Promise<NoteCard> {
-    return await this.noteCardsRepository.findOne({
-      where: { id },
-      relations: ['user'],
-    });
+  async findOne(id: string): Promise<NoteCard> {
+    const noteCard = await this.noteCardsRepository.findOne({ where: { id } });
+    if (!noteCard) {
+      throw new NotFoundException('NoteCard not found');
+    }
+    return noteCard;
   }
-}  
+
+  async findAllNoteCardsByUserId(userId: string): Promise<NoteCard[]> {
+    const noteCards = await this.noteCardsRepository.find({
+      where: { userId: userId },
+    });
+    return noteCards;
+  }
+
+  async create(createNoteCardDto: CreateNoteCardDto): Promise<NoteCard> {
+    try {
+      const newNoteCard = this.noteCardsRepository.create(createNoteCardDto);
+      return await this.noteCardsRepository.save(newNoteCard);
+    } catch (error) {
+      this.logger.error(`Failed to create NoteCard: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async update(id: string, updateNoteCardDto: UpdateNoteCardDto): Promise<NoteCard> {
+    try {
+      const noteCard = await this.findOne(id);
+      const updatedNoteCard = this.noteCardsRepository.merge(noteCard, updateNoteCardDto);
+      return await this.noteCardsRepository.save(updatedNoteCard);
+    } catch (error) {
+      this.logger.error(`Failed to update NoteCard with id ${id}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async delete(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const noteCard = await this.findOne(id);
+      await this.noteCardsRepository.remove(noteCard);
+      return { success: true, message: 'NoteCard deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to delete NoteCard with id ${id}: ${error.message}`);
+      throw error;
+    }
+  }
+}

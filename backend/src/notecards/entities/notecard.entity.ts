@@ -1,49 +1,57 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { User } from '../users/user.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity()
+export enum NoteCardType {
+  YOUTUBE = 'youtube',
+  ARTICLE = 'article',
+  PODCAST = 'podcast',
+  BOOK = 'book',
+}
+
+@Entity('note_card')
 export class NoteCard {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id?: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255, nullable: false })
   title: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 500, nullable: false })
   sourceUrl: string;
 
   @Column({
     type: 'enum',
-    enum: ['youtube', 'article', 'podcast', 'book'],
-    default: 'youtube'
+    enum: NoteCardType,
+    default: 'youtube',
   })
-  sourceType: 'youtube' | 'article' | 'podcast' | 'book';
+  sourceType: NoteCardType;
 
-  @Column("text", { array: true })
+  @Column('text', { array: true, nullable: true })
   keyTakeaways: string[];
 
-  @Column("text", { array: true })
+  @Column('text', { array: true, nullable: true })
   thoughts: string[];
 
-  @Column("text", { array: true })
+  @Column('text', { array: true, nullable: true })
   tags: string[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   thumbnailUrl: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   channelName: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   channelAvatar: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column()
-  userId: number;
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
 
-  @ManyToOne(() => User, user => user.noteCards)
-  @JoinColumn({ name: 'userId' })
-  user: User;
-} 
+  @Column({ type: 'uuid', nullable: false })
+  userId: string;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+}
