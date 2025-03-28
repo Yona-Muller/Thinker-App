@@ -25,10 +25,10 @@ async function getConfigDB(configService: ConfigService): Promise<TypeOrmModuleO
     // logging: ["query", "error", "schema", "warn", "info", "log"],
     // logger: "advanced-console",
     verboseRetryLog: true,
-    ssl: {
-      ca: fs.readFileSync(path.join(process.cwd(), 'certs/us-east-1-bundle.pem')),
-      rejectUnauthorized: true,
-    },
+    // ssl: {
+    //   ca: fs.readFileSync(path.join(process.cwd(), 'certs/us-east-1-bundle.pem')),
+    //   rejectUnauthorized: true,
+    // },
   };
   return typeOrmConfig;
 }

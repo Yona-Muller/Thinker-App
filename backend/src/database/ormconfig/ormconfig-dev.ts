@@ -9,13 +9,13 @@ export default new DataSource({
   port: 5432,
   username: 'postgres',
   password: '****',
-  database: 'Thinker',
+  database: 'thinker',
   entities: ['src/database/entity/*.{js,ts}'],
   migrations: ['src/database/migration/*.{js,ts}'],
   synchronize: false,
   migrationsRun: false,
-  ssl: {
-    ca: fs.readFileSync(path.join(process.cwd(), 'certs/us-east-1-bundle.pem')),
-    rejectUnauthorized: true,
-  },
+  // ssl: {
+  //   ca: fs.readFileSync(path.join(process.cwd(), 'certs/us-east-1-bundle.pem')),
+  //   rejectUnauthorized: true,
+  // },
 });

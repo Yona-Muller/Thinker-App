@@ -96,4 +96,10 @@ export class CreateNoteCardDto {
   })
   @IsUUID()
   userId: string;
+
+  @ApiProperty({
+    description: 'Indicates whether the note card is active.',
+    example: true,
+  })
+  isActive: boolean;
 }

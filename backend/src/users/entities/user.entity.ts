@@ -1,14 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, BeforeInsert, BeforeUpdate } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, BeforeInsert, BeforeUpdate, ManyToMany, JoinTable } from 'typeorm';
+import { NoteCard } from 'src/notecards/entities/notecard.entity';
 import * as bcrypt from 'bcrypt';
 
 export enum UserRole {
   ADMIN = 'ADMIN',
-  BUSINESS_MANAGER = 'BUSINESS_MANAGER',
-}
-
-export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
+  USER = 'USER',
 }
 
 @Entity('users')
@@ -34,16 +30,12 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.BUSINESS_MANAGER,
+    default: UserRole.USER,
   })
   role: UserRole;
 
-  @Column({
-    type: 'enum',
-    enum: UserStatus,
-    default: UserStatus.ACTIVE,
-  })
-  status: UserStatus;
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
 
   @Column({ default: null, name: 'otp_code' })
   otpCode: number;
@@ -74,6 +66,14 @@ export class User {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @ManyToMany(() => NoteCard)
+  @JoinTable({
+    name: 'user_noteCards',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'noteCard_id', referencedColumnName: 'id' },
+  })
+  noteCards: NoteCard[];
 
   @BeforeInsert()
   @BeforeUpdate()

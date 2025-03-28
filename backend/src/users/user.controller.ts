@@ -37,6 +37,7 @@ export class UserController {
   async findOne(@Param('id') id: string) {
     return this.userService.findOne(id);
   }
+
   @ApiOperation({ summary: 'Update User By Id' })
   @ApiBody({ type: UpdateUserDto })
   @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
@@ -46,23 +47,23 @@ export class UserController {
     return this.userService.update(id, updateUserDto);
   }
 
-  @ApiOperation({ summary: 'Add noteCard to User' })
+  @ApiOperation({ summary: 'Add NoteCard to User' })
   @ApiParam({ name: 'id', required: true, description: 'ID of the user' })
-  @ApiParam({ name: 'noteCardId', required: true, description: 'ID of the noteCard' })
-  @ApiResponse({ status: 200, description: 'noteCard successfully added', type: ResponseUserDto })
-  @ApiResponse({ status: 404, description: 'User or noteCard not found' })
-  @Post(':id/noteCard/:noteCard')
-  async addBusinessToUser(@Param('id') userId: string, @Param('noteCard') noteCardId: string) {
-    return this.userService.addBusinessToUser(userId, noteCardId);
+  @ApiParam({ name: 'noteCardId', required: true, description: 'ID of the NoteCard' })
+  @ApiResponse({ status: 200, description: 'NoteCard successfully added', type: ResponseUserDto })
+  @ApiResponse({ status: 404, description: 'User or NoteCard not found' })
+  @Post(':id/noteCard/:noteCardId')
+  async addNoteCardToUser(@Param('id') userId: string, @Param('noteCardId') noteCardId: string) {
+    return this.userService.addNoteCardToUser(userId, noteCardId);
   }
 
-  @ApiOperation({ summary: 'Remove noteCard from User' })
+  @ApiOperation({ summary: 'Remove NoteCard from User' })
   @ApiParam({ name: 'userId', required: true, description: 'ID of the user' })
-  @ApiParam({ name: 'noteCardId', required: true, description: 'ID of the noteCard' })
-  @ApiResponse({ status: 200, description: 'noteCard successfully removed', type: ResponseUserDto })
+  @ApiParam({ name: 'noteCardId', required: true, description: 'ID of the NoteCard' })
+  @ApiResponse({ status: 200, description: 'NoteCard successfully removed', type: ResponseUserDto })
   @ApiResponse({ status: 404, description: 'User not found' })
   @Delete(':userId/noteCard/:noteCardId')
-  async removeBusinessFromUser(@Param('userId') userId: string, @Param('noteCardId') noteCardId: string) {
-    return this.userService.removeBusinessFromUser(userId, noteCardId);
+  async removeNoteCardFromUser(@Param('userId') userId: string, @Param('noteCardId') noteCardId: string) {
+    return this.userService.removeNoteCardFromUser(userId, noteCardId);
   }
 }

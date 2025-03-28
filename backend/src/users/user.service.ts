@@ -6,7 +6,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dro';
 import { PaginationDto } from 'src/utils/pagination/paginated.query.param.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { BusinessesService } from 'src/businesses/businesses.service';
+import { NoteCardsService } from 'src/notecards/noteCards.service';
 import { SearchUserDto } from './dto/search-user.dto';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private dataSource: DataSource,
-    private businessService: BusinessesService
+    private noteCardsService: NoteCardsService
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -27,15 +27,8 @@ export class UserService {
       throw new BadRequestException('User with this email or username already exists');
     }
 
-    const existingBusiness = await this.businessService.findOne(createUserDto.businessId);
-
-    if (!existingBusiness) {
-      throw new BadRequestException('Invalid businessId');
-    }
-
     const userFromDB = await this.dataSource.transaction(async (manager) => {
       const user = manager.create(User, createUserDto);
-      user.businesses = [existingBusiness];
       return await manager.save(user);
     });
 
@@ -49,7 +42,7 @@ export class UserService {
     const [users, total] = await this.userRepository.findAndCount({
       skip,
       take: limit,
-      relations: ['businesses'],
+      relations: ['noteCards'],
     });
 
     return {
@@ -63,7 +56,7 @@ export class UserService {
   async findOne(id: string) {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['businesses'],
+      relations: ['noteCards'],
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -74,7 +67,7 @@ export class UserService {
   async update(id: string, updateUserDto: UpdateUserDto) {
     const updatedUser = await this.userRepository.findOne({
       where: { id },
-      relations: ['businesses'],
+      relations: ['noteCards'],
     });
     if (!updatedUser) {
       throw new NotFoundException(`User with ID ${id} not found after update`);
@@ -87,37 +80,42 @@ export class UserService {
     return new ResponseUserDto(savedUser);
   }
 
-  async addBusinessToUser(userId: string, businessId: string) {
+  async addNoteCardToUser(userId: string, noteCardId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['businesses'],
+      relations: ['noteCards'],
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
-    const business = await this.businessService.findOne(businessId);
-    if (!business) {
-      throw new NotFoundException(`Business with ID ${businessId} not found`);
-    }
-    const isBusinessAlreadyAdded = user.businesses.some((b) => b.id === businessId);
 
-    if (isBusinessAlreadyAdded) {
-      throw new ConflictException(`Business with ID ${businessId} already associated with this user`);
+    const noteCard = await this.noteCardsService.findOne(noteCardId);
+    if (!noteCard) {
+      throw new NotFoundException(`NoteCard with ID ${noteCardId} not found`);
     }
-    user.businesses = [...user.businesses, business];
+
+    const isNoteCardAlreadyAdded = user.noteCards.some((nc) => nc.id === noteCardId);
+
+    if (isNoteCardAlreadyAdded) {
+      throw new ConflictException(`NoteCard with ID ${noteCardId} already associated with this user`);
+    }
+
+    user.noteCards = [...user.noteCards, noteCard];
 
     return new ResponseUserDto(await this.userRepository.save(user));
   }
 
-  async removeBusinessFromUser(userId: string, businessId: string) {
+  async removeNoteCardFromUser(userId: string, noteCardId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['businesses'],
+      relations: ['noteCards'],
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
-    user.businesses = user.businesses.filter((b) => b.id !== businessId);
+
+    user.noteCards = user.noteCards.filter((nc) => nc.id !== noteCardId);
+
     return new ResponseUserDto(await this.userRepository.save(user));
   }
 
@@ -129,7 +127,7 @@ export class UserService {
 
     return await this.userRepository.findOne({
       where: whereConditions,
-      relations: ['businesses'],
+      relations: ['noteCards'],
     });
   }
 }

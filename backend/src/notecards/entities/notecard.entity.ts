@@ -25,13 +25,13 @@ export class NoteCard {
   })
   sourceType: NoteCardType;
 
-  @Column('text', { array: true, nullable: true })
+  @Column('varchar', { array: true, nullable: true })
   keyTakeaways: string[];
 
-  @Column('text', { array: true, nullable: true })
+  @Column('varchar', { array: true, nullable: true })
   thoughts: string[];
 
-  @Column('text', { array: true, nullable: true })
+  @Column('varchar', { array: true, nullable: true })
   tags: string[];
 
   @Column({ type: 'varchar', length: 500, nullable: true })

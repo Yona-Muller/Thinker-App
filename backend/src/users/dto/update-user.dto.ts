@@ -1,6 +1,6 @@
-import { IsOptional, IsEnum } from 'class-validator';
+import { IsOptional, IsEnum, IsString, IsDate, IsInt } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '../entities/user.entity'; 
+import { UserRole } from '../entities/user.entity';
 
 export class UpdateUserDto {
   @ApiProperty({
@@ -9,6 +9,7 @@ export class UpdateUserDto {
     required: false,
   })
   @IsOptional()
+  @IsString()
   email?: string;
 
   @ApiProperty({
@@ -17,6 +18,7 @@ export class UpdateUserDto {
     required: false,
   })
   @IsOptional()
+  @IsString()
   username?: string;
 
   @ApiProperty({
@@ -25,6 +27,7 @@ export class UpdateUserDto {
     required: false,
   })
   @IsOptional()
+  @IsString()
   password?: string;
 
   @ApiProperty({
@@ -33,6 +36,7 @@ export class UpdateUserDto {
     required: false,
   })
   @IsOptional()
+  @IsString()
   firstName?: string;
 
   @ApiProperty({
@@ -41,6 +45,7 @@ export class UpdateUserDto {
     required: false,
   })
   @IsOptional()
+  @IsString()
   lastName?: string;
 
   @ApiProperty({
@@ -52,11 +57,20 @@ export class UpdateUserDto {
   @IsEnum(UserRole)
   role?: UserRole;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    description: 'The OTP code for the user',
+    example: 123456,
+    required: false,
+  })
   @IsOptional()
+  @IsInt()
   otpCode?: number;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    description: 'The OTP expiration date',
+    required: false,
+  })
   @IsOptional()
+  @IsDate()
   optExpiration?: Date;
 }
